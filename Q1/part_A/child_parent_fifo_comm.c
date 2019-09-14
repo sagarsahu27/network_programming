@@ -95,3 +95,43 @@ int main() {
  
     return 0;
 }
+
+
+// compile
+// gcc child_parent_fifo_comm.c -o q1
+
+// SAMPLE OUTPUT
+
+
+/*
+
+Welcome parent with pid: 5390
+Welcome child with pid: 5391
+
+Enter What you want to tell the child process
+hello world
+
+Parent said: hello world
+Enter What you want to tell the child process
+
+message 2
+
+Parent said: message 2
+Enter What you want to tell the child process
+
+
+
+Parent said: 
+Enter What you want to tell the child process
+
+0
+Parent said: 0
+
+
+Enter What you want to tell the child process
+^C
+Time to terminate said pid 5391
+
+Time to terminate said pid 5390
+
+*/

@@ -96,3 +96,69 @@ int main() {
 
     return 0;
 }
+
+// compile 
+// gcc child_parent_thread_shared_mem.c -o q2 -lpthread
+
+
+// SAMPLE OUTPUT 
+
+/*
+
+
+Welcome parent with pid: 5414
+
+Setting up shared memory
+
+Welcome child with pid: 5416
+
+Enter what you want to send to child:
+hello world
+
+
+Enter what you want to send to child:
+Message from parent: hello world
+
+0
+
+
+Enter what you want to send to child:
+Message from parent: 0
+
+
+
+
+Enter what you want to send to child:
+Message from parent: 
+
+::
+
+
+Enter what you want to send to child:
+Message from parent: ::
+
+"""
+
+
+Enter what you want to send to child:
+Message from parent: """
+
+""^[[D
+
+
+Enter what you want to send to child:
+Message from parent: ""
+
+"\0"
+
+
+Enter what you want to send to child:
+Message from parent: "\0"
+
+^C
+
+Time to terminate said pid 5416
+Time to terminate said pid 5414
+
+
+*/
