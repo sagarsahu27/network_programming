@@ -1,0 +1,175 @@
+To compile this code
+server side:
+g++ server.c -o server
+
+client side:
+g++ client.c -o client
+
+Getting help
+
+./server -h
+Usage: ./server -n <number of server intance> -c <number of client to support>
+
+For case 1:
+ ./server -n 1 -c 1
+Here only single instance of server is supported
+and only single connection of client is supported
+
+For case 2:
+ ./server -n 10 -c 10
+Here only multiple instance of server are supported through fork()
+and multiple connections of client are supported
+
+For case 3:
+ ./server -n 1 -c 10
+Here only single instance of server is supported
+and multiple connections of client are supported
+
+If no value or incorrect value is passed Case 3 is assumed default
+
+
+SERVER MODEL:
+
+CASE: 1
+
+=> SERVER
+./server -n 1 -c 1
+Case 1 mode is running
+Listening on port 5050
+Connected with client 127.0.0.1 with socket 12
+Sending Reply: 17
+Sending Reply: 48
+Sending Reply: 4
+Sending Reply: 3
+Sending Reply: invalid expression
+ Usage: Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+
+Sending Reply: Unsupported Operator
+Sending Reply: first operand invalid
+Sending Reply: second operand invalid
+Maximum client capacity is reached !!!
+Maximum client capacity is reached !!!
+
+=> CLIENT-1:
+./client 127.0.0.1 5050
+This is basic calculator app
+Follow this syntax for writing expression
+Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+Please enter the expression:12 + 5
+Server Replied (2 bytes):
+ 17 
+Please enter the expression:12 * 4
+Server Replied (2 bytes):
+ 48 
+Please enter the expression:12 / 3
+Server Replied (1 bytes):
+ 4 
+Please enter the expression:12 - 9
+Server Replied (1 bytes):
+ 3 
+Please enter the expression:1235
+Server Replied (80 bytes):
+ invalid expression
+ Usage: Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+ 
+Please enter the expression:12 @ 4
+Server Replied (20 bytes):
+ Unsupported Operator 
+Please enter the expression:r + 3
+Server Replied (21 bytes):
+ first operand invalid 
+Please enter the expression:4 + e
+Server Replied (22 bytes):
+ second operand invalid 
+
+
+=> CLIENT-2:
+./client 127.0.0.1 5050
+This is basic calculator app
+Follow this syntax for writing expression
+Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+Connection closed by peer.
+Closing socket...
+Finished.
+
+=> CLIENT-3:
+./client 127.0.0.1 5050
+This is basic calculator app
+Follow this syntax for writing expression
+Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+Connection closed by peer.
+Closing socket...
+Finished.
+
+
+CASE-2
+
+=> SERVER
+./server -n 10 -c 10
+Case 2 mode is running
+Listening on port 5050
+Connected with client 127.0.0.1 with socket 12
+Connected with client 127.0.0.1 with socket 13
+Connected with client 127.0.0.1 with socket 17
+
+CHECK PROCESS STATUS
+ ps -e | grep -i server
+15967 pts/4    00:00:00 server
+15969 pts/4    00:00:00 server
+15972 pts/4    00:00:00 server
+16028 pts/4    00:00:00 server
+
+
+CASE-3
+
+=> SERVER:
+./server -n 1 -c 10
+Case 3 mode is running
+Listening on port 5050
+Connected with client 127.0.0.1 with socket 12
+Connected with client 127.0.0.1 with socket 13
+Connected with client 127.0.0.1 with socket 17
+Sending Reply: 72
+Sending Reply: 3026
+Sending Reply: 64
+
+=> CLIENT-1
+./client 127.0.0.1 5050
+This is basic calculator app
+Follow this syntax for writing expression
+Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+Please enter the expression:2048 / 32
+Server Replied (2 bytes):
+ 64 
+
+=> CLIENT-2
+./client 127.0.0.1 5050
+This is basic calculator app
+Follow this syntax for writing expression
+Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+Please enter the expression:34 * 89
+Server Replied (4 bytes):
+ 3026 
+
+=> CLIENT-3
+ ./client 127.0.0.1 5050
+This is basic calculator app
+Follow this syntax for writing expression
+Operand1 <SPACE> Operator(+,-,*,/) <SPACE> Operand2
+
+Please enter the expression:12 * 6
+Server Replied (2 bytes):
+ 72 
+
+ ps -e | grep -i server
+16096 pts/4    00:00:00 server
+
+
+
