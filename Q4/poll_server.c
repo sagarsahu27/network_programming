@@ -124,7 +124,7 @@ int main() {
                     // Accept Client request
                     struct sockaddr_storage client_address;
                     socklen_t client_len = sizeof(client_address);
-                    SOCKET socket_host = accept(socket_listen_host,
+                    socket_host = accept(socket_listen_host,
                             (struct sockaddr*) &client_address,
                             &client_len);
                     if (!IsValidSocket(socket_host)) {
@@ -156,7 +156,6 @@ int main() {
                         continue;
                     }
 
-                    FILE *cmd_pipe;
                     int bytes_read;
                     long unsigned int nbytes = 8192;
                     char cmd_output[nbytes];
@@ -164,32 +163,19 @@ int main() {
                     // To prevent running command other than client provided
                     // due to buffer overflow
                     read[bytes_received] = '\0';
-                    printf("Command received from %d: %s", i, read);
-
-                    // Open cmd pipes to pass client command 
-                    cmd_pipe = popen(read, "r");
-
-                    // Check that pipes are non-null 
-                    if (!cmd_pipe) {
-                        fprintf (stderr, "pipes failed.\n");
-                        return 1;
-                    }
+                    printf("Query received from %d: %s", i, read);
 
                     // Read output from cmd_pipe 
-                    char tmp_str[256];
-                    int offset =0;
-                    memset(tmp_str,0,256);
+                    char tmp_str[256] = "\nClient1 - Yes\0";
+                    int offset = 0;
                     memset(cmd_output,0,8192);
-                    while(fgets(tmp_str, 256, cmd_pipe) != NULL) {
-                        int str_len = strlen(tmp_str);
-                        strncpy(cmd_output + offset,tmp_str,str_len);
-                        offset += str_len;
-                    }
-
-                    // Close cmd_pipe, checking for errors 
-                    if (pclose(cmd_pipe) != 0) {
-                        fprintf (stdout, "Could not run %i, or other error.\n", errno);
-                    }
+                    int str_len = strlen(read);
+                    offset += str_len;
+                    strncpy(cmd_output ,read,str_len);
+                    str_len = strlen(tmp_str);
+                    strncpy(cmd_output + offset ,tmp_str,str_len);
+                    offset += str_len;
+                    strncpy(cmd_output + offset ,"\nClient2 - Yes\0",15);
 
                     // Send reply to client
                     printf("Sending Reply: %s\n", cmd_output);
