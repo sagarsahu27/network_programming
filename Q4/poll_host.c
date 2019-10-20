@@ -3,7 +3,7 @@
 int main(int argc, char *argv[]) {
 
     if (argc < 3) {
-        fprintf(stderr, "usage: ./client ip_address port\n");
+        fprintf(stderr, "usage: ./poll_host ip_address 5050\n");
         return 1;
     }
 
@@ -39,7 +39,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     freeaddrinfo(peer_address);
-
+    int is_poll_ongoing =2;
+    int k =0;
     while(1) {
 
         fd_set reads;
@@ -61,20 +62,46 @@ int main(int argc, char *argv[]) {
             int bytes_received = recv(socket_peer, read, 4096, 0);
             if (bytes_received < 1) {
                 printf("Connection closed by peer.\n");
+                CloseSocket(socket_peer);
                 break;
             }
             if(strlen(read)) {
-              printf("Server Replied (%ld bytes):\n %.*s \n",
-                    strlen(read), bytes_received, read);
+                if (is_poll_ongoing == 2) {
+                    printf("%s \n", read);
+                } else {
+                    printf("\rPoll Ended (%ld bytes)=>\n Clients response for query: %.*s \n",
+                        strlen(read), bytes_received, read);
+                }
             }
-        } else {
+            is_poll_ongoing = 0;
+        } else if(!is_poll_ongoing) {
             // Get command from client input
             char read[4096];
-            printf("Please enter the command:");
+            printf("Time to start a poll, Please enter a poll question:");
             if (!fgets(read, 4096, stdin)) break;
 
             // Send data to server
             int bytes_sent = send(socket_peer, read, strlen(read), 0);
+            is_poll_ongoing =1;
+        } else {
+            if (k%4 == 0) {
+                printf("\r\\");
+                fflush(stdout);
+                k++;
+            } else if (k%4 == 1) {
+                printf("\r|");
+                fflush(stdout);
+                k++;
+            } else if (k%4 == 2) {
+                printf("\r/");
+                fflush(stdout);
+                k++;
+            }  else {
+                printf("\r-");
+                fflush(stdout);
+                k++;
+            }
+
         }
     } //end while(1)
 

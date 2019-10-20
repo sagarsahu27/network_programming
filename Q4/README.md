@@ -1,146 +1,149 @@
-############ To compile code ########################
+############################### COMPILING CODE #######################################
 
-gcc server.c -o server
-gcc client.c -o client
+g++ poll_client.c -o poll_client -lpthread
+g++ poll_host.c -o poll_host
+g++ poll_server.c -o server -lpthread
+
+################################ OUTPUT OF CODE #######################################
+
+Polling Server:
+
+(base) laffy@laffy-fed:~/workspace/bits_pilani/netw_prog/ec1/ex1/Q4$ ./server 
+Listening host on port 5050
+Listening Clients on port 5150
+Connected with client 127.0.0.1 with socket 13
+Connected with client 127.0.0.1 with socket 17
+Connected with host with socket 18 clients #2
+nc 2
+Number of connected client: 2
+Query received from 18: are you listening to me 1 -> yes 0 -> no
+Sending Query: are you listening to me 1 -> yes 0 -> no
+
+Sending Query: are you listening to me 1 -> yes 0 -> no
+
+Poll Started
+Time remaining: 54
+Response received from 17: 1
+Time remaining: 50
+Response received from 13: 1
+Time remaining:  0
+Poll ended
+Sending Poll response are you listening to me 1 -> yes 0 -> no
+
+ Client17 - 1
+ Client13 - 1
+Query received from 18: shall we start 1 -> yes, 0 -> no
+Sending Query: shall we start 1 -> yes, 0 -> no
+
+Sending Query: shall we start 1 -> yes, 0 -> no
+
+Poll Started
+Time remaining: 56
+Response received from 17: 1
+Time remaining: 53
+Response received from 13: 1
+Time remaining:  0
+Poll ended
+Sending Poll response shall we start 1 -> yes, 0 -> no
+
+ Client17 - 1
+ Client13 - 1
+^C
 
 
-################# CLIENT SIDE OUTPUT #################################
+##################################################################################
+Polling host:
 
-######### Tried to connect Client 11 
+laffy@laffy-fed:~/workspace/bits_pilani/netw_prog/ec1/ex1/Q4$ ./poll_host 127.0.0.1 5050
+Number of connected client: 2 
+Time to start a poll, Please enter a poll question:are you listening to me 1 -> yes 0 -> no
+Poll Ended (69 bytes)=>
+ Clients response for query: are you listening to me 1 -> yes 0 -> no
 
-./client 127.0.0.1 5050
+ Client17 - 1
+ Client13 - 1 
+Time to start a poll, Please enter a poll question:shall we start 1 -> yes, 0 -> no
+Poll Ended (69 bytes)=>
+ Clients response for query: shall we start 1 -> yes, 0 -> no
+
+ Client17 - 1
+ Client13 - 1 
+Time to start a poll, Please enter a poll question:
 Connection closed by peer.
 Closing socket...
 Finished.
 
 
-############# Running various command through client
+######################################################################################
 
-./client 127.0.0.1 5050
-Please enter the command:ls | grep -i cl
-Server Replied (16 bytes):
- client
-client.c
+Polling client 1
 
-
-
-./client 127.0.0.1 5050
-Please enter the command:ls -alh
-Server Replied (406 bytes):
- total 56K
-drwxr-xr-x 2 laffy laffy 4.0K Sep 14 16:47 .
-drwxrwxr-x 6 laffy laffy 4.0K Sep 14 13:36 ..
--rw-rw-r-- 1 laffy laffy    0 Sep 14 15:28 a.out
--rwxrwxr-x 1 laffy laffy  14K Sep 14 16:37 client
--rw-rw-r-- 1 laffy laffy 2.3K Sep 14 16:30 client.c
--rw-rw-r-- 1 laffy laffy  334 Sep 14 14:41 common.h
--rwxrwxr-x 1 laffy laffy  14K Sep 14 16:47 server
--rw-rw-r-- 1 laffy laffy 4.7K Sep 14 16:47 server.c
+laffy@laffy-fed:~/workspace/bits_pilani/netw_prog/ec1/ex1/Q4$ ./poll_client 127.0.0.1 5150
+Wait for Poll start from polling server
+Time idle:  20  
+New Poll started :
+ are you listening to me 1 -> yes 0 -> no
  
+Please enter your response:
+Time idle:   6  1
+your response 1
 
+Time idle:  54  
+Poll results arrived :
+ are you listening to me 1 -> yes 0 -> no
 
-
-./client 127.0.0.1 5050
-Please enter the command:ls -a
-Server Replied (52 bytes):
- .
-..
-a.out
-client
-client.c
-common.h
-server
-server.c
+ Client17 - 1
+ Client13 - 1 
+Time idle:  24  
+New Poll started :
+ shall we start 1 -> yes, 0 -> no
  
+Please enter your response:
+Time idle:   4  1
+your response 1
 
+Time idle:  56  
+Poll results arrived :
+ shall we start 1 -> yes, 0 -> no
 
-./client 127.0.0.1 5050
-Please enter the command:ps
-Server Replied (142 bytes):
-   PID TTY          TIME CMD
- 6871 pts/1    00:00:00 bash
-14453 pts/1    00:00:00 server
-14501 pts/1    00:00:00 sh
-14502 pts/1    00:00:00 ps
+ Client17 - 1
+ Client13 - 1 
+Time idle:  28  Connection closed by peer.
 
+#################################################################################################
 
+Polling client #2
 
-./client 127.0.0.1 5050
-Please enter the command:pwd
-Server Replied (55 bytes):
- /home/laffy/workspace/bits_pilani/netw_prog/ec1/ex1/Q2
-
-
+laffy@laffy-fed:~/workspace/bits_pilani/netw_prog/ec1/ex1/Q4$ ./poll_client 127.0.0.1 5150
+Wait for Poll start from polling server
+Time idle:  22  
+New Poll started :
+ are you listening to me 1 -> yes 0 -> no
  
+Please enter your response:
+Time idle:  11  1
+your response 1
 
-./client 127.0.0.1 5050
-Please enter the command:ls
-Server Replied (47 bytes):
- a.out
-client
-client.c
-common.h
-server
-server.c
+Time idle:  49  
+Poll results arrived :
+ are you listening to me 1 -> yes 0 -> no
 
+ Client17 - 1
+ Client13 - 1 
+Time idle:  25  
+New Poll started :
+ shall we start 1 -> yes, 0 -> no
+ 
+Please enter your response:
+Time idle:   7  1
+your response 1
 
+Time idle:  53  
+Poll results arrived :
+ shall we start 1 -> yes, 0 -> no
 
-############## SERVER SIDE OUTPUT #############################
-
-laffy@laffy-fed:~/workspace/bits_pilani/netw_prog/ec1/ex1/Q2$ ./server 
-Listening on port 5050
-Connected with client 127.0.0.1 with socket 12
-Connected with client 127.0.0.1 with socket 13
-Connected with client 127.0.0.1 with socket 17
-Connected with client 127.0.0.1 with socket 18
-Connected with client 127.0.0.1 with socket 19
-Connected with client 127.0.0.1 with socket 20
-Connected with client 127.0.0.1 with socket 22
-Connected with client 127.0.0.1 with socket 23
-Connected with client 127.0.0.1 with socket 24
-Connected with client 127.0.0.1 with socket 25
-Maximum client capacity is reached !!!
-Command received from 25: ls
-Sending Reply: a.out
-client
-client.c
-common.h
-server
-server.c
-
-Command received from 24: pwd
-Sending Reply: /home/laffy/workspace/bits_pilani/netw_prog/ec1/ex1/Q2
-
-Command received from 23: ps
-Sending Reply:   PID TTY          TIME CMD
- 6871 pts/1    00:00:00 bash
-14453 pts/1    00:00:00 server
-14501 pts/1    00:00:00 sh
-14502 pts/1    00:00:00 ps
-
-Command received from 22: ls -a
-Sending Reply: .
-..
-a.out
-client
-client.c
-common.h
-server
-server.c
-
-Command received from 20: ls -alh
-Sending Reply: total 56K
-drwxr-xr-x 2 laffy laffy 4.0K Sep 14 16:47 .
-drwxrwxr-x 6 laffy laffy 4.0K Sep 14 13:36 ..
--rw-rw-r-- 1 laffy laffy    0 Sep 14 15:28 a.out
--rwxrwxr-x 1 laffy laffy  14K Sep 14 16:37 client
--rw-rw-r-- 1 laffy laffy 2.3K Sep 14 16:30 client.c
--rw-rw-r-- 1 laffy laffy  334 Sep 14 14:41 common.h
--rwxrwxr-x 1 laffy laffy  14K Sep 14 16:47 server
--rw-rw-r-- 1 laffy laffy 4.7K Sep 14 16:47 server.c
-
-Command received from 19: ls | grep -i cl
-Sending Reply: client
-client.c
+ Client17 - 1
+ Client13 - 1 
+Time idle:  28  Connection closed by peer.
 
 

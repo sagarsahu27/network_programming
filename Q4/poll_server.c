@@ -33,24 +33,31 @@ void* host_query_handler(void * argument) {
                     if (i == restrict_sockets[0] || i == restrict_sockets[1] || i == restrict_sockets[2]) {
                         continue; // these are not clients sockets
                     }
-                    strncpy(args->query + *(args->query_len) - 1 ,"\nEnter response as \n  1 -> Yes \n  0-> No\0",41);
                     // Send query to client
                     printf("Sending Query: %s\n", args->query);
                     send(i, args->query, *(args->query_len), 0);
                 }
             }
             is_poll_available = 2;
-            send(restrict_sockets[2], "Polling started\0", 17, 0);  
-            printf("Polling start\n");
-            sleep(20);
-            printf("Polling 20s done\n");
-            sleep(20);
-            printf("Polling 40s done\n");
-            sleep(20);
+            printf("Poll Started\n");
+            int i = 60;
+            while(i) {
+                sleep(1);
+                i -= 1;
+                printf("\rTime remaining: %2d", i);
+                fflush(stdout);
+            } 
             is_poll_available = 0;
-            printf("Polling ended\n");
-            printf("Sending following response %s\n", args->query);
-            send(restrict_sockets[2], args->query, *(args->query_len), 0);  
+            printf("\nPoll ended\n");
+            printf("Sending Poll response %s\n", args->query);
+            for(int i = 1; i <= *(args->max_socket); ++i) {
+                if (FD_ISSET(i, args->master)) {
+                    if (i == restrict_sockets[0] || i == restrict_sockets[1]) {
+                        continue; // these are not clients/host sockets
+                    }
+                    send(i, args->query, *(args->query_len), 0);
+                }
+            }
         }
     }
 }
@@ -142,6 +149,7 @@ int main() {
     args.max_socket = &max_socket;
     args.query = read;
     args.query_len = &bytes_received;
+    int num_client = 0;
 
     pthread_t host_thread;
 
@@ -181,7 +189,7 @@ int main() {
                     FD_SET(socket_client, &master);
                     if (socket_client > max_socket)
                         max_socket = socket_client;
-
+                    num_client++;
                     char address_buffer[100];
                     getnameinfo((struct sockaddr*)&client_address,
                             client_len,
@@ -214,7 +222,15 @@ int main() {
                             address_buffer, sizeof(address_buffer), 0, 0,
                             NI_NUMERICHOST);
                     restrict_sockets[2] = socket_host;
-                    printf("Connected with host with socket %d\n", socket_host);
+                    printf("Connected with host with socket %d clients #%d\n", socket_host, num_client);
+                    char rsp[64] = "Number of connected client: ";
+                    char nc[3];
+                    snprintf(nc, 3, "%d", num_client);
+                    printf("nc %s\n", nc);
+                    strncpy(rsp + 28, nc, 3);
+                    strncpy(rsp + 31, " \0", 2);
+                    printf("%s\n", rsp);
+                    send(socket_host, rsp, strlen(rsp), 0);
 
                 } else if (i == socket_host) {
 
@@ -235,11 +251,12 @@ int main() {
                 } else {
 
                     // Receive request from exisitng client
-                    char resp[1024];
-                    int bytes_rec = recv(i, resp, 1024, 0);
+                    char resp[2];
+                    int bytes_rec = recv(i, resp, 2, 0);
                     if (bytes_rec < 1) {
                         FD_CLR(i, &master);
                         CloseSocket(i);
+                        num_client--;
                         continue;
                     }
 
@@ -249,22 +266,26 @@ int main() {
                     // To prevent running command other than client provided
                     // due to buffer overflow
                     resp[bytes_rec] = '\0';
-                    printf("Response received from %d: %s", i, resp);
+                    printf("\nResponse received from %d: %s\n", i,resp);
                     char client_id[3];
-                    snprintf(client_id, 10, "%d", i);;
+                    snprintf(client_id, 10, "%d", i);
                     int str_len = strlen(resp);
-                    strncpy(read + bytes_received -1,"\n Client ",9);
+                    strncpy(read + bytes_received ,"\n Client ",9);
                     strncpy(read + bytes_received + 8, client_id ,2);
                     strncpy(read + bytes_received + 10," - ",3);
-                    strncpy(read + bytes_received + 13,resp,str_len);
-                    bytes_received += str_len + 13;
-                    send(i, resp, str_len, 0);
+                    strncpy(read + bytes_received + 13,resp,1);
+                    strncpy(read + bytes_received + 14,"\0",1);
+                    bytes_received += 14;
                     
                 }
             } //if FD_ISSET
         } //for i to max_socket
     } //while(1)
 
+    if(pthread_join(host_thread, NULL)) {
+        fprintf(stderr, "Error joining thread\n");
+        return 2;
+    }
     printf("Closing listening socket...\n");
     CloseSocket(socket_listen);
 
