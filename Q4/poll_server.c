@@ -1,7 +1,40 @@
 #include "common.h"
 #include <ctype.h>
+#include <pthread.h>
 
 #define MAX_SOCKET_CLIENT 10
+SOCKET restrict_sockets[3];
+int is_poll_available = 0;
+
+struct arg
+{
+    fd_set* master;
+    char* query;
+    SOCKET* max_socket;
+    size_t * query_len;
+};
+
+
+void* host_query_handler(void * argument) {
+
+    struct arg* args = (struct arg* ) argument;
+    while(1) {
+        if (is_poll_available) {
+            for(int i = 1; i <= *(args->max_socket); ++i) {
+                if (FD_ISSET(i, args->master)) {
+                    if (i == restrict_sockets[0] || i == restrict_sockets[1] || i == restrict_sockets[2]) {
+                        continue; // these are not clients sockets
+                    }
+                    // Send query to client
+                    printf("Sending Query: %s\n", args->query);
+                    send(i, args->query, *(args->query_len), 0);            
+                }
+            }
+            sleep(60);
+            is_poll_available = 0;
+        }
+    }
+}
 
 int main() {
 
@@ -80,6 +113,23 @@ int main() {
     FD_SET(socket_listen, &master);
     FD_SET(socket_listen_host, &master);
     SOCKET max_socket = socket_listen, socket_host;
+    restrict_sockets[0] = socket_listen_host;
+    restrict_sockets[1] = socket_listen;
+    char read[8192];
+    size_t bytes_received = 0;
+    struct arg args;
+    args.master = &master;
+    args.max_socket = &max_socket;
+    args.query = read;
+    args.query_len = &bytes_received;
+
+    pthread_t host_thread;
+
+    if(pthread_create(&host_thread, NULL, host_query_handler, (void *)&args)) {
+        fprintf(stderr, "Error creating thread\n");
+        return 1;
+    }
+
     while(1) {
         fd_set reads;
         reads = master;
@@ -143,28 +193,26 @@ int main() {
                             client_len,
                             address_buffer, sizeof(address_buffer), 0, 0,
                             NI_NUMERICHOST);
+                    restrict_sockets[2] = socket_host;
                     printf("Connected with host with socket %d\n", socket_host);
 
                 } else if (i == socket_host) {
 
                     // Receive request from exisitng host
-                    char read[8192];
-                    int bytes_received = recv(i, read, 8192, 0);
+                    bytes_received = recv(i, read, 8192, 0);
                     if (bytes_received < 1) {
                         FD_CLR(i, &master);
                         CloseSocket(i);
                         continue;
                     }
 
-                    int bytes_read;
-                    long unsigned int nbytes = 8192;
-                    char cmd_output[nbytes];
-
                     // To prevent running command other than client provided
                     // due to buffer overflow
                     read[bytes_received] = '\0';
                     printf("Query received from %d: %s", i, read);
 
+                    is_poll_available = 1;
+#if 0
                     // Read output from cmd_pipe 
                     char tmp_str[256] = "\nClient1 - Yes\0";
                     int offset = 0;
@@ -180,7 +228,7 @@ int main() {
                     // Send reply to client
                     printf("Sending Reply: %s\n", cmd_output);
                     send(i, cmd_output, nbytes, 0);
-
+#endif
                 } else {
 
                     // Receive request from exisitng client
