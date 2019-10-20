@@ -4,6 +4,14 @@
 
 #define MAX_SOCKET_CLIENT 10
 SOCKET restrict_sockets[3];
+
+/*
+is_poll_available is a flag tell status of poll
+0 -> No active poll
+1 -> Recevied poll query from Host
+2 -> Poll query sent to client and waiting for response
+*/
+
 int is_poll_available = 0;
 
 struct arg
@@ -19,19 +27,30 @@ void* host_query_handler(void * argument) {
 
     struct arg* args = (struct arg* ) argument;
     while(1) {
-        if (is_poll_available) {
+        if (is_poll_available == 1) {
             for(int i = 1; i <= *(args->max_socket); ++i) {
                 if (FD_ISSET(i, args->master)) {
                     if (i == restrict_sockets[0] || i == restrict_sockets[1] || i == restrict_sockets[2]) {
                         continue; // these are not clients sockets
                     }
+                    strncpy(args->query + *(args->query_len) - 1 ,"\nEnter response as \n  1 -> Yes \n  0-> No\0",41);
                     // Send query to client
                     printf("Sending Query: %s\n", args->query);
-                    send(i, args->query, *(args->query_len), 0);            
+                    send(i, args->query, *(args->query_len), 0);
                 }
             }
-            sleep(60);
+            is_poll_available = 2;
+            send(restrict_sockets[2], "Polling started\0", 17, 0);  
+            printf("Polling start\n");
+            sleep(20);
+            printf("Polling 20s done\n");
+            sleep(20);
+            printf("Polling 40s done\n");
+            sleep(20);
             is_poll_available = 0;
+            printf("Polling ended\n");
+            printf("Sending following response %s\n", args->query);
+            send(restrict_sockets[2], args->query, *(args->query_len), 0);  
         }
     }
 }
@@ -117,6 +136,7 @@ int main() {
     restrict_sockets[1] = socket_listen;
     char read[8192];
     size_t bytes_received = 0;
+    int offset = 0;
     struct arg args;
     args.master = &master;
     args.max_socket = &max_socket;
@@ -212,72 +232,34 @@ int main() {
                     printf("Query received from %d: %s", i, read);
 
                     is_poll_available = 1;
-#if 0
-                    // Read output from cmd_pipe 
-                    char tmp_str[256] = "\nClient1 - Yes\0";
-                    int offset = 0;
-                    memset(cmd_output,0,8192);
-                    int str_len = strlen(read);
-                    offset += str_len;
-                    strncpy(cmd_output ,read,str_len);
-                    str_len = strlen(tmp_str);
-                    strncpy(cmd_output + offset ,tmp_str,str_len);
-                    offset += str_len;
-                    strncpy(cmd_output + offset ,"\nClient2 - Yes\0",15);
-
-                    // Send reply to client
-                    printf("Sending Reply: %s\n", cmd_output);
-                    send(i, cmd_output, nbytes, 0);
-#endif
                 } else {
 
                     // Receive request from exisitng client
-                    char read[1024];
-                    int bytes_received = recv(i, read, 1024, 0);
-                    if (bytes_received < 1) {
+                    char resp[1024];
+                    int bytes_rec = recv(i, resp, 1024, 0);
+                    if (bytes_rec < 1) {
                         FD_CLR(i, &master);
                         CloseSocket(i);
                         continue;
                     }
 
-                    FILE *cmd_pipe;
-                    int bytes_read;
-                    long unsigned int nbytes = 8192;
-                    char cmd_output[nbytes];
-
+                    if (is_poll_available <= 1) {
+                        continue;
+                    }
                     // To prevent running command other than client provided
                     // due to buffer overflow
-                    read[bytes_received] = '\0';
-                    printf("Command received from %d: %s", i, read);
-
-                    // Open cmd pipes to pass client command 
-                    cmd_pipe = popen(read, "r");
-
-                    // Check that pipes are non-null 
-                    if (!cmd_pipe) {
-                        fprintf (stderr, "pipes failed.\n");
-                        return 1;
-                    }
-
-                    // Read output from cmd_pipe 
-                    char tmp_str[256];
-                    int offset =0;
-                    memset(tmp_str,0,256);
-                    memset(cmd_output,0,8192);
-                    while(fgets(tmp_str, 256, cmd_pipe) != NULL) {
-                        int str_len = strlen(tmp_str);
-                        strncpy(cmd_output + offset,tmp_str,str_len);
-                        offset += str_len;
-                    }
-
-                    // Close cmd_pipe, checking for errors 
-                    if (pclose(cmd_pipe) != 0) {
-                        fprintf (stdout, "Could not run %i, or other error.\n", errno);
-                    }
-
-                    // Send reply to client
-                    printf("Sending Reply: %s\n", cmd_output);
-                    send(i, cmd_output, nbytes, 0);
+                    resp[bytes_rec] = '\0';
+                    printf("Response received from %d: %s", i, resp);
+                    char client_id[3];
+                    snprintf(client_id, 10, "%d", i);;
+                    int str_len = strlen(resp);
+                    strncpy(read + bytes_received -1,"\n Client ",9);
+                    strncpy(read + bytes_received + 8, client_id ,2);
+                    strncpy(read + bytes_received + 10," - ",3);
+                    strncpy(read + bytes_received + 13,resp,str_len);
+                    bytes_received += str_len + 13;
+                    send(i, resp, str_len, 0);
+                    
                 }
             } //if FD_ISSET
         } //for i to max_socket
